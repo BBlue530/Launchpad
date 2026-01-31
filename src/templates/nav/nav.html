@@ -1,0 +1,58 @@
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='nav_style.css') }}">
+
+<nav class="navbar-left">
+    <div class="nav-header">
+        <img src="{{ url_for('static', filename='images/test_logo.png') }}" alt="Logo" class="logo">
+        <div class="nav-title">Launchpad</div>
+    </div>
+    <ul class="nav-links">
+        <li class="nav-section">Home</li>
+        <li>
+            <a href="/" class="{% if request.path == '/' %}active{% endif %}">
+                <span class="nav-icon">🏠</span> Home
+            </a>
+
+            <a href="/add_service" class="{% if request.path == '/add_service' %}active{% endif %}">
+                <span class="nav-icon">🚀</span> Add Service
+            </a>
+        </li>
+    </ul>
+</nav>
+
+<nav class="navbar-top">
+    <div class="top-left status-bar">
+        {% for item in system_status %}
+            <div class="dropdown status-dropdown">
+                <a href="{{ item.url }}"
+                   class="status-item status-{{ item.state }}"
+                   title="View logs for {{ item.name }}">
+
+                    <span class="status-label">{{ item.name }}</span>
+                    <span class="status-module">{{ item.module }}</span>
+                </a>
+
+                <div class="dropdown-content">
+                    <div class="status-message status-{{ item.state }}">
+                        {{ item.message }}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="dropdown">
+        <a href="#" class="dropbtn user-trigger">
+            <span class="avatar">
+                {% if user.userpic %}
+                    <img src="{{ user.userpic }}" alt="{{ user.username }}">
+                {% else %}
+                    {{ user.username[0]|upper }}
+                {% endif %}
+            </span>
+            <span class="username">{{ user.username }}</span>
+        </a>
+        <div class="dropdown-content">
+            <a href="/">PLACEHOLDER</a>
+        </div>
+    </div>
+</nav>

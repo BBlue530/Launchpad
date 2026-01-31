@@ -1,0 +1,90 @@
+:root {
+    --bg-root: #1f1f1f;       /* background */
+    --bg-surface: #161616;    /* sidebar */
+    --bg-hover: #172136;      /* hover sidebar */
+
+    --text-primary: #e5e7eb;
+    --text-secondary: #9ca3af;
+    --text-muted: #6b7280;
+
+    --accent: #1552b3;
+    --accent-soft: rgba(59, 130, 246, 0.18);
+
+    --border-subtle: #000000;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--bg-root);
+    color: var(--text-primary);
+    display: flex;
+    line-height: 1.4;
+}
+
+.content {
+    margin-left: 240px;
+    padding: 1.75rem 2rem;
+    width: 100%;
+}
+
+.panel {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.panel-header {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+}
+
+.flash-bar {
+    position: fixed;
+    top: 48px;
+    left: 240px;
+    right: 0;
+    z-index: 1100;
+
+    display: flex;
+    justify-content: stretch;
+    pointer-events: none;
+    padding: 0.5rem 1rem;
+    box-sizing: border-box;
+}
+
+.flash-message {
+    pointer-events: auto;
+    width: 100%;
+    background-color: var(--bg-surface);
+    padding: 0.65rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    border: 1px solid transparent;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    animation: flash-slide-in 0.25s ease-out;
+    color: var(--text-primary);
+}
+
+.message-status-true {
+    background-color: rgba(63, 185, 80, 0.15);
+    border-color: rgba(63, 185, 80, 0.45);
+    color: #3fb950;
+}
+
+.message-status-false {
+    background-color: rgba(248, 81, 73, 0.15);
+    border-color: rgba(248, 81, 73, 0.45);
+    color: #f85149;
+}

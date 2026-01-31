@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Launchpad</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='base_style.css') }}">
+</head>
+<body>
+    {% include "nav/nav.html" %}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-bar">
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <main class="content">
+        {% include "components/add_service_form.html" %}
+    </main>
+</body>
+</html>
