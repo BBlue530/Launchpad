@@ -1,4 +1,5 @@
 from flask import Flask
+from config.read_app_config import read_config
 
 app = Flask(__name__)
 
@@ -11,4 +12,5 @@ app.register_blueprint(home_bp)
 app.register_blueprint(service_handling_bp)
 
 if __name__ == "__main__":
+    read_config()
     app.run(debug=True)

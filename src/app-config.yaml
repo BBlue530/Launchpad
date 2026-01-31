@@ -1,0 +1,19 @@
+backend:
+  storage:
+
+    database:
+      postgresql:
+        username: "${EXTERNAL_DB_USERNAME}"
+        password: "${EXTERNAL_DB_PASSWORD}"
+        db_name: "${EXTERNAL_DB_NAME}"
+        db_host: "${EXTERNAL_DB_HOST}"
+    
+    gitops:
+      repository: "${REPOSITORY_URL}"
+      pat: "${REPOSITORY_PAT}"
+      branch_name: "launchpad/gitops"
+  
+  cluster:
+    api_server: "${K8S_API_SERVER}"
+    token: "${K8S_TOKEN}"
+    ca_cert: "${K8S_CA_CERT}"

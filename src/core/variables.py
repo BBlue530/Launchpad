@@ -9,3 +9,5 @@ user = {
     "username": "jdoe",
     "userpic": None
 }
+
+app_config_path = "app-config.yaml"
