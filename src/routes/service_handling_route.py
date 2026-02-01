@@ -1,4 +1,6 @@
 from flask import render_template, request, Blueprint, redirect, url_for, flash
+import yaml
+from cluster_handling.deploy_service import deploy_service
 from core.variables import *
 
 service_handling_bp = Blueprint("service_handling", __name__)
@@ -15,21 +17,40 @@ def add_service():
 def add_service_form():
     helm_chart_url = request.form.get("helm_chart_url")
     helm_chart_values = request.form.get("helm_chart_values")
+    cluster_namespace = request.form.get("cluster_namespace")
+    cluster_release_name = request.form.get("cluster_release_name")
 
-    if helm_chart_url == "fail":
+    required_inputs = [helm_chart_url, cluster_namespace, cluster_release_name]
+    if not all(required_inputs):
         flash(
-            "Failure of input stuff and things happen",
+            "Missing required deployment fields",
             "message-status-false"
+        )
+        return redirect(url_for("service_handling.add_service"))
+
+    try:
+        helm_chart_values = yaml.safe_load(helm_chart_values) or {}
+    except yaml.YAMLError as e:
+        flash(
+            f"Invalid Helm values YAML: {e}",
+            "message-status-false"
+        )
+        return redirect(url_for("service_handling.add_service"))
+
+    stdout_json = deploy_service(helm_chart_url, helm_chart_values, cluster_namespace, cluster_release_name)
+
+
+    if not stdout_json or not stdout_json.get("success"):
+        error_msg = (stdout_json.get("stderr") or stdout_json.get("stdout") or "unknown error")
+
+        flash(
+            f"Deployment failed for [{cluster_namespace}]: {error_msg}",
+            "message-status-false",
         )
     else:
         flash(
-            "Success of input stuff and things happen",
-            "message-status-true"
+            f"Deployment of [{cluster_namespace}] succeeded",
+            "message-status-true",
         )
-    
-    print("Helm Chart Url:")
-    print(helm_chart_url)
-    print("Helm Chart Values:")
-    print(helm_chart_values)
 
     return redirect(url_for("service_handling.add_service"))
