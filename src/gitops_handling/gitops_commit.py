@@ -12,6 +12,9 @@ def commit_helm_chart(helm_chart_url, helm_chart_values, cluster_namespace, clus
     gitops_pat = os.environ.get("gitops_pat")
     gitops_branch_name = os.environ.get("gitops_branch_name")
 
+    gitops_user_name = os.environ.get("gitops_user_name")
+    gitops_user_email = os.environ.get("gitops_user_email")
+
     gitops_repository_with_pat = gitops_repository.replace("https://", f"https://{gitops_pat}@")
     
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -56,8 +59,8 @@ def commit_helm_chart(helm_chart_url, helm_chart_values, cluster_namespace, clus
             yaml.dump(helm_chart_values, f)
 
         # Need to be locally set and to avoid global config
-        subprocess.run(["git", "config", "--global", "user.email", "launchpad@test.com"], cwd=tmpdir, check=True)
-        subprocess.run(["git", "config", "--global", "user.name", "launchpad_test"], cwd=tmpdir, check=True)
+        subprocess.run(["git", "config", "--global", "user.name", gitops_user_name], cwd=tmpdir, check=True)
+        subprocess.run(["git", "config", "--global", "user.email", gitops_user_email], cwd=tmpdir, check=True)
 
         subprocess.run(["git", "add", "."], cwd=tmpdir, check=True)
         subprocess.run(["git", "commit", "-m", f"bot: Update {cluster_release_name} Helm chart and values"], cwd=tmpdir, check=True)

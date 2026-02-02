@@ -12,6 +12,9 @@ backend:
       repository: "${REPOSITORY_URL}"
       pat: "${REPOSITORY_PAT}"
       branch_name: "launchpad/gitops"
+      identity:
+        user_name: "${REPOSITORY_USER_NAME}"
+        user_email: "${REPOSITORY_USER_EMAIL}"
   
   cluster:
     api_server: "${K8S_API_SERVER}"
