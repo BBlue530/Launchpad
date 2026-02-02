@@ -11,3 +11,7 @@ user = {
 }
 
 app_config_path = "app-config.yaml"
+
+gitops_helm_chart_deployment = "charts"
+
+gitops_backup_helm_chart_deployment = "backup_charts"

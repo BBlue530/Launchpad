@@ -1,6 +1,7 @@
 from flask import render_template, request, Blueprint, redirect, url_for, flash
 import yaml
 from cluster_handling.deploy_service import deploy_service
+from gitops_handling.gitops_commit import commit_helm_chart
 from core.variables import *
 
 service_handling_bp = Blueprint("service_handling", __name__)
@@ -39,7 +40,6 @@ def add_service_form():
 
     stdout_json = deploy_service(helm_chart_url, helm_chart_values, cluster_namespace, cluster_release_name)
 
-
     if not stdout_json or not stdout_json.get("success"):
         error_msg = (stdout_json.get("stderr") or stdout_json.get("stdout") or "unknown error")
 
@@ -52,5 +52,7 @@ def add_service_form():
             f"Deployment of [{cluster_namespace}] succeeded",
             "message-status-true",
         )
+
+        commit_helm_chart(helm_chart_url, helm_chart_values, cluster_namespace, cluster_release_name)
 
     return redirect(url_for("service_handling.add_service"))
