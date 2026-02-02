@@ -6,8 +6,7 @@ import yaml
 import shutil
 from core.variables import *
 
-def commit_helm_chart(helm_chart_url, helm_chart_values, cluster_namespace, cluster_release_name):
-    # Need to do something about version and if it doesnt exist just run without it like it is rn
+def commit_helm_chart(helm_chart_url, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name):
     gitops_repository = os.environ.get("gitops_repository")
     gitops_pat = os.environ.get("gitops_pat")
     gitops_branch_name = os.environ.get("gitops_branch_name")
@@ -33,6 +32,7 @@ def commit_helm_chart(helm_chart_url, helm_chart_values, cluster_namespace, clus
         
         helm_chart_metadata = {
             "helm_chart_url": helm_chart_url,
+            "helm_chart_version": helm_chart_version,
             "timestamp": timestamp
         }
         
@@ -52,22 +52,21 @@ def commit_helm_chart(helm_chart_url, helm_chart_values, cluster_namespace, clus
         backup_helm_chart_values_path = os.path.join(tmpdir, cluster_release_name, gitops_backup_helm_chart_deployment, cluster_namespace, "values.yaml")
         backup_helm_chart_dir = os.path.join(tmpdir, cluster_release_name, gitops_backup_helm_chart_deployment, cluster_namespace)
 
-        pull_helm_chart(helm_chart_url, chart_name, backup_helm_chart_dir, cluster_namespace, cluster_release_name)
+        pull_helm_chart(helm_chart_url, helm_chart_version, chart_name, backup_helm_chart_dir, cluster_namespace, cluster_release_name)
 
         os.makedirs(os.path.dirname(backup_helm_chart_values_path), exist_ok=True)
         with open(backup_helm_chart_values_path, "w") as f:
             yaml.dump(helm_chart_values, f)
 
-        # Need to be locally set and to avoid global config
-        subprocess.run(["git", "config", "--global", "user.name", gitops_user_name], cwd=tmpdir, check=True)
-        subprocess.run(["git", "config", "--global", "user.email", gitops_user_email], cwd=tmpdir, check=True)
+        subprocess.run(["git", "config", "--local", "user.name", gitops_user_name], cwd=tmpdir, check=True)
+        subprocess.run(["git", "config", "--local", "user.email", gitops_user_email], cwd=tmpdir, check=True)
 
         subprocess.run(["git", "add", "."], cwd=tmpdir, check=True)
         subprocess.run(["git", "commit", "-m", f"bot: Update {cluster_release_name} Helm chart and values"], cwd=tmpdir, check=True)
         subprocess.run(["git", "push", "origin", gitops_branch_name], cwd=tmpdir, check=True)
 
 
-def pull_helm_chart(helm_chart_url, chart_name, helm_chart_dir, cluster_namespace, cluster_release_name):
+def pull_helm_chart(helm_chart_url, helm_chart_version, chart_name, helm_chart_dir, cluster_namespace, cluster_release_name):
     os.makedirs(helm_chart_dir, exist_ok=True)
     helm_repo = f"{cluster_release_name}_{cluster_namespace}"
 
@@ -78,5 +77,9 @@ def pull_helm_chart(helm_chart_url, chart_name, helm_chart_dir, cluster_namespac
     if os.path.exists(chart_path):
         shutil.rmtree(chart_path)
 
-    cmd = ["helm", "pull", f"{helm_repo}/{chart_name}", "--untar", f"--untardir={helm_chart_dir}"]
-    subprocess.run(cmd, check=True)
+    pull_helm_chart_cmd = ["helm", "pull", f"{helm_repo}/{chart_name}", "--untar", f"--untardir={helm_chart_dir}"]
+    if helm_chart_version:
+        pull_helm_chart_cmd.extend(["--version", helm_chart_version])
+
+    subprocess.run(pull_helm_chart_cmd, check=True)
+    subprocess.run(["helm", "repo", "remove", helm_repo], check=True)
