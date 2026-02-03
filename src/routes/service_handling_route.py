@@ -17,6 +17,7 @@ def add_service():
 @service_handling_bp.route("/add_service_form", methods=["POST"])
 def add_service_form():
     helm_chart_url = request.form.get("helm_chart_url")
+    helm_chart_name = request.form.get("helm_chart_name")
     helm_chart_version = request.form.get("helm_chart_version")
     helm_chart_values = request.form.get("helm_chart_values")
 
@@ -55,6 +56,6 @@ def add_service_form():
             "message-status-true",
         )
 
-        commit_helm_chart(helm_chart_url, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name)
+        commit_helm_chart(helm_chart_url, helm_chart_name, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name)
 
     return redirect(url_for("service_handling.add_service"))

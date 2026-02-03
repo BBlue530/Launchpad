@@ -6,7 +6,7 @@ import yaml
 import shutil
 from core.variables import *
 
-def commit_helm_chart(helm_chart_url, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name):
+def commit_helm_chart(helm_chart_url, helm_chart_name, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name):
     gitops_repository = os.environ.get("gitops_repository")
     gitops_pat = os.environ.get("gitops_pat")
     gitops_branch_name = os.environ.get("gitops_branch_name")
@@ -18,17 +18,19 @@ def commit_helm_chart(helm_chart_url, helm_chart_version, helm_chart_values, clu
     gitops_user_email = os.environ.get("gitops_user_email")
 
     gitops_repository_with_pat = gitops_repository.replace("https://", f"https://{gitops_pat}@")
+
+    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+
+    helm_chart_metadata = {
+        "helm_chart_url": helm_chart_url,
+        "helm_chart_version": helm_chart_version,
+        "helm_chart_name": helm_chart_name,
+        "timestamp": timestamp
+    }
     
     with tempfile.TemporaryDirectory() as tmp_repo_dir, tempfile.TemporaryDirectory() as tmp_gpg_dir:
+
         subprocess.run(["git", "clone", "--branch", gitops_branch_name, gitops_repository_with_pat, tmp_repo_dir], check=True)
-        
-        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-        
-        helm_chart_metadata = {
-            "helm_chart_url": helm_chart_url,
-            "helm_chart_version": helm_chart_version,
-            "timestamp": timestamp
-        }
         
         helm_chart_values_path = os.path.join(tmp_repo_dir, cluster_release_name, gitops_helm_chart_deployment, cluster_namespace, "values.yaml")
         helm_chart_metadata_path = os.path.join(tmp_repo_dir, cluster_release_name, gitops_helm_chart_deployment, cluster_namespace, "metadata.yaml")
@@ -41,12 +43,10 @@ def commit_helm_chart(helm_chart_url, helm_chart_version, helm_chart_values, clu
         with open(helm_chart_values_path, "w") as f:
             yaml.dump(helm_chart_values, f)
 
-        chart_name = helm_chart_url.rstrip("/").split("/")[-1]
-
         backup_helm_chart_values_path = os.path.join(tmp_repo_dir, cluster_release_name, gitops_backup_helm_chart_deployment, cluster_namespace, "values.yaml")
         backup_helm_chart_dir = os.path.join(tmp_repo_dir, cluster_release_name, gitops_backup_helm_chart_deployment, cluster_namespace)
 
-        pull_helm_chart(helm_chart_url, helm_chart_version, chart_name, backup_helm_chart_dir, cluster_namespace, cluster_release_name)
+        pull_helm_chart(helm_chart_url, helm_chart_version, helm_chart_name, backup_helm_chart_dir, cluster_namespace, cluster_release_name)
 
         os.makedirs(os.path.dirname(backup_helm_chart_values_path), exist_ok=True)
         with open(backup_helm_chart_values_path, "w") as f:
