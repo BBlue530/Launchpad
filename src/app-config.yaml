@@ -12,6 +12,8 @@ backend:
       repository: "${REPOSITORY_URL}"
       pat: "${REPOSITORY_PAT}"
       branch_name: "launchpad/gitops"
+      gpg_priv_key: "${REPOSITORY_GPG_PRIV_KEY}"
+      gpg_priv_key_id: "${REPOSITORY_GPG_PRIV_KEY_ID}"
       identity:
         user_name: "${REPOSITORY_USER_NAME}"
         user_email: "${REPOSITORY_USER_EMAIL}"

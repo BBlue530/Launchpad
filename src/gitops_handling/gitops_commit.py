@@ -11,22 +11,16 @@ def commit_helm_chart(helm_chart_url, helm_chart_version, helm_chart_values, clu
     gitops_pat = os.environ.get("gitops_pat")
     gitops_branch_name = os.environ.get("gitops_branch_name")
 
+    gitops_gpg_priv_key = os.environ.get("gitops_gpg_priv_key")
+    gitops_gpg_priv_key_id = os.environ.get("gitops_gpg_priv_key_id")
+
     gitops_user_name = os.environ.get("gitops_user_name")
     gitops_user_email = os.environ.get("gitops_user_email")
 
     gitops_repository_with_pat = gitops_repository.replace("https://", f"https://{gitops_pat}@")
     
-    with tempfile.TemporaryDirectory() as tmpdir:
-        subprocess.run(
-            [
-                "git",
-                "clone",
-                "--branch",
-                gitops_branch_name,
-                gitops_repository_with_pat,
-                tmpdir
-            ],
-            check=True)
+    with tempfile.TemporaryDirectory() as tmp_repo_dir, tempfile.TemporaryDirectory() as tmp_gpg_dir:
+        subprocess.run(["git", "clone", "--branch", gitops_branch_name, gitops_repository_with_pat, tmp_repo_dir], check=True)
         
         timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
         
@@ -36,8 +30,8 @@ def commit_helm_chart(helm_chart_url, helm_chart_version, helm_chart_values, clu
             "timestamp": timestamp
         }
         
-        helm_chart_values_path = os.path.join(tmpdir, cluster_release_name, gitops_helm_chart_deployment, cluster_namespace, "values.yaml")
-        helm_chart_metadata_path = os.path.join(tmpdir, cluster_release_name, gitops_helm_chart_deployment, cluster_namespace, "metadata.yaml")
+        helm_chart_values_path = os.path.join(tmp_repo_dir, cluster_release_name, gitops_helm_chart_deployment, cluster_namespace, "values.yaml")
+        helm_chart_metadata_path = os.path.join(tmp_repo_dir, cluster_release_name, gitops_helm_chart_deployment, cluster_namespace, "metadata.yaml")
 
         os.makedirs(os.path.dirname(helm_chart_metadata_path), exist_ok=True)
         with open(helm_chart_metadata_path, "w") as f:
@@ -49,8 +43,8 @@ def commit_helm_chart(helm_chart_url, helm_chart_version, helm_chart_values, clu
 
         chart_name = helm_chart_url.rstrip("/").split("/")[-1]
 
-        backup_helm_chart_values_path = os.path.join(tmpdir, cluster_release_name, gitops_backup_helm_chart_deployment, cluster_namespace, "values.yaml")
-        backup_helm_chart_dir = os.path.join(tmpdir, cluster_release_name, gitops_backup_helm_chart_deployment, cluster_namespace)
+        backup_helm_chart_values_path = os.path.join(tmp_repo_dir, cluster_release_name, gitops_backup_helm_chart_deployment, cluster_namespace, "values.yaml")
+        backup_helm_chart_dir = os.path.join(tmp_repo_dir, cluster_release_name, gitops_backup_helm_chart_deployment, cluster_namespace)
 
         pull_helm_chart(helm_chart_url, helm_chart_version, chart_name, backup_helm_chart_dir, cluster_namespace, cluster_release_name)
 
@@ -58,12 +52,31 @@ def commit_helm_chart(helm_chart_url, helm_chart_version, helm_chart_values, clu
         with open(backup_helm_chart_values_path, "w") as f:
             yaml.dump(helm_chart_values, f)
 
-        subprocess.run(["git", "config", "--local", "user.name", gitops_user_name], cwd=tmpdir, check=True)
-        subprocess.run(["git", "config", "--local", "user.email", gitops_user_email], cwd=tmpdir, check=True)
+        if gitops_gpg_priv_key and gitops_gpg_priv_key_id:
+            gpg_key_path = os.path.join(tmp_gpg_dir, "gpg.priv")
 
-        subprocess.run(["git", "add", "."], cwd=tmpdir, check=True)
-        subprocess.run(["git", "commit", "-m", f"bot: Update {cluster_release_name} Helm chart and values"], cwd=tmpdir, check=True)
-        subprocess.run(["git", "push", "origin", gitops_branch_name], cwd=tmpdir, check=True)
+            gitops_gpg_priv_key = gitops_gpg_priv_key.replace('\\n', '\n').strip('"').strip("'")
+
+            with open(gpg_key_path, "w") as f:
+                f.write(gitops_gpg_priv_key)
+
+            subprocess.run(["gpg", "--batch", "--pinentry-mode", "loopback", "--import", gpg_key_path], check=True)
+            subprocess.run(["git", "config", "--local", "user.signingkey", gitops_gpg_priv_key_id], cwd=tmp_repo_dir, check=True)
+            subprocess.run(["git", "config", "--local", "commit.gpgsign", "true"], cwd=tmp_repo_dir, check=True)
+            subprocess.run(["git", "config", "--local", "gpg.program", "gpg"], cwd=tmp_repo_dir, check=True)
+
+        subprocess.run(["git", "config", "--local", "user.name", gitops_user_name], cwd=tmp_repo_dir, check=True)
+        subprocess.run(["git", "config", "--local", "user.email", gitops_user_email], cwd=tmp_repo_dir, check=True)
+
+        subprocess.run(["git", "add", "."], cwd=tmp_repo_dir, check=True)
+        commit_cmd = ["git", "commit", "-m", f"bot: Update {cluster_release_name} Helm chart and values"]
+
+        if gitops_gpg_priv_key and gitops_gpg_priv_key_id:
+            commit_cmd.insert(2, "-S")
+
+        subprocess.run(commit_cmd, cwd=tmp_repo_dir, check=True)
+        
+        subprocess.run(["git", "push", "origin", gitops_branch_name], cwd=tmp_repo_dir, check=True)
 
 
 def pull_helm_chart(helm_chart_url, helm_chart_version, chart_name, helm_chart_dir, cluster_namespace, cluster_release_name):

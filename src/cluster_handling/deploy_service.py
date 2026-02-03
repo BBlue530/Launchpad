@@ -52,7 +52,7 @@ def deploy_service(helm_chart_url, helm_chart_version, helm_chart_values, cluste
         with open(values_path, "w") as f:
             yaml.safe_dump(helm_chart_values, f)
 
-        cmd = [
+        helm_install_cmd = [
             "helm", "upgrade", "--install", cluster_release_name, helm_chart_url,
             "--namespace", cluster_namespace,
             "--create-namespace",
@@ -61,15 +61,10 @@ def deploy_service(helm_chart_url, helm_chart_version, helm_chart_values, cluste
         ]
 
         if helm_chart_version:
-            cmd.extend(["--version", helm_chart_version])
+            helm_install_cmd.extend(["--version", helm_chart_version])
 
         try:
-            result = subprocess.run(
-                cmd,
-                check=True,
-                capture_output=True,
-                text=True,
-            )
+            result = subprocess.run(helm_install_cmd, check=True, capture_output=True, text=True)
 
             stdout_json = {
                 "success": True,
