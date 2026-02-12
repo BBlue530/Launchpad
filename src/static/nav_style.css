@@ -307,20 +307,26 @@
 
 .status-ok {
     background-color: rgba(63, 185, 80, 0.15);
-    border-color: rgba(63, 185, 80, 0.4);
+    border-color: rgba(0, 255, 34, 0.4);
     color: #3fb950;
 }
 
 .status-neutral {
     background-color: rgba(56, 139, 253, 0.15);
-    border-color: rgba(56, 139, 253, 0.4);
+    border-color: rgba(0, 106, 255, 0.4);
     color: #3b82f6;
 }
 
 .status-error {
     background-color: rgba(248, 81, 73, 0.15);
-    border-color: rgba(248, 81, 73, 0.4);
+    border-color: rgba(255, 13, 0, 0.4);
     color: #f85149;
+}
+
+.status-warning {
+    background-color: rgba(255, 251, 0, 0.15);
+    border-color: rgba(238, 255, 0, 0.4);
+    color: #ebd407;
 }
 
 .status-ok::after {
@@ -333,6 +339,10 @@
 
 .status-error::after {
     border: 2px solid #f85149;
+}
+
+.status-warning::after {
+    border: 2px solid #ebd407;
 }
 
 .status-item:hover::after,
@@ -395,5 +405,10 @@
 
 .status-message.status-error {
     border-color: #f85149;
+    box-shadow: 0 4px 12px rgba(248, 81, 73, 0.15);
+}
+
+.status-message.status-warning {
+    border-color: #ebd407;
     box-shadow: 0 4px 12px rgba(248, 81, 73, 0.15);
 }

@@ -5,6 +5,12 @@ system_status = [
     {"name": "Cache", "url": "/test_3", "module": "redis.internal", "state": "neutral", "message": "Cache Processing"},
 ]
 
+#system_status = [
+#    {"name": "Gitops", "url": "/logs/connectivity/gitops", "module": "gitops.repository", "state": state, "message": message, "logs": logs},
+#    {"name": "K8S", "url": "/logs/connectivity/k8s", "module": "k8s.cluster", "state": "error", "state": state, "message": message, "logs": logs},
+#    {"name": "Database", "url": "/logs/connectivity/database", "module": "database.postgresql", "state": state, "message": message, "logs": logs},
+#]
+
 user = {
     "username": "jdoe",
     "userpic": None
