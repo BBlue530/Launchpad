@@ -1,0 +1,17 @@
+name: Base Orchestrator Pipeline
+
+on:
+  push:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+
+  backup-repo:
+    if: always()
+    uses: ./.github/workflows/backup-repo.yaml
+    secrets:
+      API_KEY: ${{ secrets.API_KEY }}
+      BACKUP_LAMBDA_FUNCTION_URL: ${{ secrets.BACKUP_LAMBDA_FUNCTION_URL }}
