@@ -1,6 +1,7 @@
 import subprocess
 import os
 from datetime import datetime
+import tempfile
 from core.variables import gitops_name, gitops_logs_endpoint, gitops_module_name, state_key, message_key, logs_key
 
 def check_gitops_connectivity():
@@ -11,6 +12,9 @@ def check_gitops_connectivity():
     gitops_repository = os.environ.get("gitops_repository")
     gitops_pat = os.environ.get("gitops_pat")
     gitops_branch_name = os.environ.get("gitops_branch_name")
+
+    gitops_user_name = os.environ.get("gitops_user_name")
+    gitops_user_email = os.environ.get("gitops_user_email")
 
     timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
 
@@ -24,6 +28,7 @@ def check_gitops_connectivity():
     
     gitops_repository_with_pat = gitops_repository.replace("https://", f"https://{gitops_pat}@")
 
+    # Check that the repo is reachable
     try:
         subprocess.run(["git", "ls-remote", gitops_repository_with_pat], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
         message = "Repository is reachable"
@@ -48,6 +53,7 @@ def check_gitops_connectivity():
         print(f"[!] {message}")
         return gitops_connectivity
 
+    # Check that the repo has the needed branch
     try:
         result = subprocess.run(["git", "ls-remote", "--heads", gitops_repository_with_pat, gitops_branch_name], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
 
@@ -64,7 +70,6 @@ def check_gitops_connectivity():
             gitops_connectivity[state_key] = "warning"
             logs.append(f"branch {gitops_branch_name} missing at [{timestamp}]")
             print(f"[!] {message}")
-            return gitops_connectivity
 
     except subprocess.CalledProcessError as e:
         message = "Repository reachable but branch check failed"
@@ -81,7 +86,47 @@ def check_gitops_connectivity():
         logs.append("repository check timed out")
         print(f"[!] {message}")
         return gitops_connectivity
+    
+    # Check that the PAT has the needed permissions
+    try:
+        with tempfile.TemporaryDirectory() as tmp_repo_dir:
 
-# Should check that the pat has the permissions needed and whatever else that could be useful
+            subprocess.run(["git", "clone", "--depth", "1", "--branch", gitops_branch_name, gitops_repository_with_pat, tmp_repo_dir], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
+
+            subprocess.run(["git", "config", "--local", "user.name", gitops_user_name], cwd=tmp_repo_dir, check=True)
+            subprocess.run(["git", "config", "--local", "user.email", gitops_user_email], cwd=tmp_repo_dir, check=True)
+            subprocess.run(["git", "config", "--local", "commit.gpgsign", "false"], cwd=tmp_repo_dir, check=True)
+
+            subprocess.run(["git", "commit", "--allow-empty", "-m", "permission-check"], cwd=tmp_repo_dir, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            subprocess.run(["git", "push", "--dry-run", "origin", gitops_branch_name], cwd=tmp_repo_dir, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
+
+            message = "PAT has required permissions"
+            gitops_connectivity[message_key] = message
+            gitops_connectivity[state_key] = "ok"
+            logs.append(f"permission verified at [{timestamp}]")
+            print(f"[+] {message}")
+
+    except subprocess.CalledProcessError as e:
+        stderr = e.stderr.decode().lower()
+
+        if "403" in stderr or "permission" in stderr:
+            message = "PAT lacks permission"
+            gitops_connectivity[state_key] = "error"
+        else:
+            message = "Permission check failed"
+            gitops_connectivity[state_key] = "warning"
+
+        gitops_connectivity[message_key] = message
+        logs.append(stderr.strip())
+        print(f"[!] {message}")
+        return gitops_connectivity
+
+    except subprocess.TimeoutExpired:
+        message = "Permission check timed out"
+        gitops_connectivity[message_key] = message
+        gitops_connectivity[state_key] = "error"
+        logs.append("Permission check timed out")
+        print(f"[!] {message}")
+        return gitops_connectivity
 
     return gitops_connectivity

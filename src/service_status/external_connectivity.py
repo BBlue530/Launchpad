@@ -7,6 +7,7 @@ def check_external_connectivity():
     global system_connectivity_status
 
     gitops_connectivity = check_gitops_connectivity()
+    print(gitops_connectivity)
 
     system_connectivity_status.append(gitops_connectivity)
 
