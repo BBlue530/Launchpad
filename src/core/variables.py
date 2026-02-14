@@ -5,6 +5,14 @@ system_status = [
     {"name": "Cache", "url": "/test_3", "module": "redis.internal", "state": "neutral", "message": "Cache Processing"},
 ]
 
+gitops_name = "Gitops"
+gitops_logs_endpoint = "/logs/connectivity/gitops"
+gitops_module_name = "gitops.repository"
+
+state_key = "state"
+message_key = "message"
+logs_key = "logs"
+
 #system_status = [
 #    {"name": "Gitops", "url": "/logs/connectivity/gitops", "module": "gitops.repository", "state": state, "message": message, "logs": logs},
 #    {"name": "K8S", "url": "/logs/connectivity/k8s", "module": "k8s.cluster", "state": "error", "state": state, "message": message, "logs": logs},
