@@ -55,13 +55,15 @@ body {
     z-index: 1100;
 
     display: flex;
-    justify-content: stretch;
+    flex-direction: column;
+    gap: 0.5rem;
     pointer-events: none;
     padding: 0.5rem 1rem;
     box-sizing: border-box;
 }
 
 .flash-message {
+    position: relative;
     pointer-events: auto;
     width: 100%;
     background-color: var(--bg-surface);
@@ -73,8 +75,45 @@ body {
     align-items: center;
     border: 1px solid transparent;
     box-shadow: 0 6px 16px rgba(0,0,0,0.15);
-    animation: flash-slide-in 0.25s ease-out;
     color: var(--text-primary);
+    overflow: hidden;
+    
+    animation: flash-fade-out 1s ease-in 10s forwards;
+    animation-play-state: running;
+}
+
+.flash-message:hover {
+    animation-play-state: paused;
+}
+
+.flash-timer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    width: 100%;
+    background-color: currentColor;
+    opacity: 0.7;
+    animation: timer-shrink 10s linear forwards;
+}
+
+.flash-message:hover .flash-timer {
+    animation-play-state: paused;
+}
+
+@keyframes timer-shrink {
+    from { width: 100%; }
+    to { width: 0%; }
+}
+
+@keyframes flash-fade-out {
+    to {
+        opacity: 0;
+        transform: translateY(-10px);
+        height: 0;
+        margin: 0;
+        padding: 0;
+    }
 }
 
 .message-status-true {
