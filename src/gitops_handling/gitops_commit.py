@@ -27,6 +27,24 @@ def commit_helm_chart(helm_chart_url, helm_chart_name, helm_chart_version, helm_
         "helm_chart_name": helm_chart_name,
         "timestamp": timestamp
     }
+
+    result = subprocess.run(["git", "ls-remote", "--heads", gitops_repository_with_pat, gitops_branch_name], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
+
+    if not result.stdout:
+        with tempfile.TemporaryDirectory() as tmp_create_branch:
+
+            subprocess.run(["git", "clone", "--depth", "1", gitops_repository_with_pat, tmp_create_branch],check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
+
+            gpg_sign_config(gitops_gpg_priv_key_id, gitops_gpg_priv_key, tmp_create_branch)
+
+            subprocess.run(["git", "config", "--local", "user.name", gitops_user_name], cwd=tmp_create_branch, check=True)
+            subprocess.run(["git", "config", "--local", "user.email", gitops_user_email], cwd=tmp_create_branch, check=True)
+
+            subprocess.run(["git", "checkout", "-b", gitops_branch_name], cwd=tmp_create_branch, check=True)
+
+            subprocess.run(["git", "commit", "--allow-empty", "-m", "bot: Initial branch creation"], cwd=tmp_create_branch, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+            subprocess.run(["git", "push", "-u", "origin", gitops_branch_name], cwd=tmp_create_branch, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
     
     with tempfile.TemporaryDirectory() as tmp_repo_dir, tempfile.TemporaryDirectory() as tmp_gpg_dir:
 
@@ -52,18 +70,7 @@ def commit_helm_chart(helm_chart_url, helm_chart_name, helm_chart_version, helm_
         with open(backup_helm_chart_values_path, "w") as f:
             yaml.dump(helm_chart_values, f)
 
-        if gitops_gpg_priv_key and gitops_gpg_priv_key_id:
-            gpg_key_path = os.path.join(tmp_gpg_dir, "gpg.priv")
-
-            gitops_gpg_priv_key = gitops_gpg_priv_key.replace('\\n', '\n').strip('"').strip("'")
-
-            with open(gpg_key_path, "w") as f:
-                f.write(gitops_gpg_priv_key)
-
-            subprocess.run(["gpg", "--batch", "--pinentry-mode", "loopback", "--import", gpg_key_path], check=True)
-            subprocess.run(["git", "config", "--local", "user.signingkey", gitops_gpg_priv_key_id], cwd=tmp_repo_dir, check=True)
-            subprocess.run(["git", "config", "--local", "commit.gpgsign", "true"], cwd=tmp_repo_dir, check=True)
-            subprocess.run(["git", "config", "--local", "gpg.program", "gpg"], cwd=tmp_repo_dir, check=True)
+        gpg_sign_config(gitops_gpg_priv_key_id, gitops_gpg_priv_key, tmp_repo_dir)
 
         subprocess.run(["git", "config", "--local", "user.name", gitops_user_name], cwd=tmp_repo_dir, check=True)
         subprocess.run(["git", "config", "--local", "user.email", gitops_user_email], cwd=tmp_repo_dir, check=True)
@@ -96,3 +103,19 @@ def pull_helm_chart(helm_chart_url, helm_chart_version, chart_name, helm_chart_d
 
     subprocess.run(pull_helm_chart_cmd, check=True)
     subprocess.run(["helm", "repo", "remove", helm_repo], check=True)
+
+def gpg_sign_config(gitops_gpg_priv_key_id, gitops_gpg_priv_key, tmp_dir):
+    if gitops_gpg_priv_key and gitops_gpg_priv_key_id:
+        gpg_key_path = os.path.join(tmp_dir, "gpg.priv")
+
+        gitops_gpg_priv_key = gitops_gpg_priv_key.replace('\\n', '\n').strip('"').strip("'")
+
+        with open(gpg_key_path, "w") as f:
+            f.write(gitops_gpg_priv_key)
+
+        subprocess.run(["gpg", "--batch", "--pinentry-mode", "loopback", "--import", gpg_key_path], check=True)
+        subprocess.run(["git", "config", "--local", "user.signingkey", gitops_gpg_priv_key_id], cwd=tmp_dir, check=True)
+        subprocess.run(["git", "config", "--local", "commit.gpgsign", "true"], cwd=tmp_dir, check=True)
+        subprocess.run(["git", "config", "--local", "gpg.program", "gpg"], cwd=tmp_dir, check=True)
+    else:
+        subprocess.run(["git", "config", "--local", "commit.gpgsign", "false"], cwd=tmp_dir, check=True)
