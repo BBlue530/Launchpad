@@ -9,6 +9,10 @@ gitops_name = "Gitops"
 gitops_logs_endpoint = "/logs/connectivity/gitops"
 gitops_module_name = "gitops.repository"
 
+cluster_name = "K8S"
+cluster_log_endpoint = "/logs/connectivity/k8s"
+cluster_module_name = "k8s.cluster"
+
 state_key = "state"
 message_key = "message"
 logs_key = "logs"
