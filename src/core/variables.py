@@ -1,10 +1,3 @@
-# Temp vars and will be replaced later on with real generated data
-system_status = [
-    {"name": "API", "url": "/test_1", "module": "api.internal", "state": "ok", "message": "API OK"},
-    {"name": "Auth", "url": "/test_2", "module": "auth.internal", "state": "error", "message": "Auth Error"},
-    {"name": "Cache", "url": "/test_3", "module": "redis.internal", "state": "neutral", "message": "Cache Processing"},
-]
-
 gitops_name = "Gitops"
 gitops_logs_endpoint = "/logs/connectivity/gitops"
 gitops_module_name = "gitops.repository"
@@ -13,16 +6,15 @@ cluster_name = "K8S"
 cluster_log_endpoint = "/logs/connectivity/k8s"
 cluster_module_name = "k8s.cluster"
 
+db_name = "Database"
+db_log_endpoint = "/logs/connectivity/database"
+db_module_name = "database.postgresql"
+
 state_key = "state"
 message_key = "message"
 logs_key = "logs"
 
-#system_status = [
-#    {"name": "Gitops", "url": "/logs/connectivity/gitops", "module": "gitops.repository", "state": state, "message": message, "logs": logs},
-#    {"name": "K8S", "url": "/logs/connectivity/k8s", "module": "k8s.cluster", "state": "error", "state": state, "message": message, "logs": logs},
-#    {"name": "Database", "url": "/logs/connectivity/database", "module": "database.postgresql", "state": state, "message": message, "logs": logs},
-#]
-
+# Still placeholder here. Will be real when real login logic gets added
 user = {
     "username": "jdoe",
     "userpic": None
