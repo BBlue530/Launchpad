@@ -1,5 +1,5 @@
 import os
-from config.helpers.expand_env_var import expand_env
+from helpers.expand_env_var import expand_env
 
 def database_config(app_config):
     os.environ["db_username"] = expand_env(app_config.get("backend", {}).get("storage", {}).get("database", {}).get("postgresql", {}).get("username", False))

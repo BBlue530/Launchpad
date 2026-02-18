@@ -2,8 +2,9 @@ from flask import render_template, request, Blueprint, redirect, url_for, flash
 import yaml
 from cluster_handling.deploy_service import deploy_service
 from gitops_handling.gitops_commit import commit_helm_chart
-from core.variables import *
+from cluster_handling.list_namespaces import list_all_namespaces
 from service_status.external_connectivity import system_connectivity_status
+from core.variables import *
 
 service_handling_bp = Blueprint("service_handling", __name__)
 
@@ -13,7 +14,10 @@ def add_service():
 
     if not message:
         message = request.args.get('message')
-    return render_template("add_service.html", system_status=system_connectivity_status, user=user, message=message)
+
+    all_namespaces = list_all_namespaces()
+    
+    return render_template("add_service.html", system_status=system_connectivity_status, all_namespaces=all_namespaces, user=user, message=message)
 
 @service_handling_bp.route("/add_service_form", methods=["POST"])
 def add_service_form():

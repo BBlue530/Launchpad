@@ -1,5 +1,5 @@
 import os
-from config.helpers.expand_env_var import expand_env
+from helpers.expand_env_var import expand_env
 
 def cluster_config(app_config):
     os.environ["cluster_api_server"] = expand_env(app_config.get("backend", {}).get("cluster", {}).get("api_server", False))

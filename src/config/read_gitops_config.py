@@ -1,5 +1,5 @@
 import os
-from config.helpers.expand_env_var import expand_env
+from helpers.expand_env_var import expand_env
 
 def gitops_config(app_config):
     os.environ["gitops_repository"] = expand_env(app_config.get("backend", {}).get("storage", {}).get("gitops", {}).get("repository", False))
