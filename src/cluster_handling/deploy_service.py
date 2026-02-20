@@ -3,8 +3,11 @@ import subprocess
 import tempfile
 import base64
 import yaml
+import json
 
 def deploy_service(helm_chart_url, helm_chart_name, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name, rollback_on_failure):
+    result_json = {}
+
     cluster_api_server = os.environ.get("cluster_api_server")
     cluster_token = os.environ.get("cluster_token")
     cluster_ca_cert = os.environ.get("cluster_ca_cert")
@@ -85,20 +88,44 @@ def deploy_service(helm_chart_url, helm_chart_name, helm_chart_version, helm_cha
         if helm_chart_version:
             helm_install_cmd.extend(["--version", helm_chart_version])
 
+        before = get_latest_deployment(cluster_release_name, cluster_namespace, kubeconfig_path)
+
         try:
             result = subprocess.run(helm_install_cmd, check=True, capture_output=True, text=True)
 
-            stdout_json = {
-                "success": True,
-                "stdout": result.stdout,
-            }
+            result_json["success"] = (result.returncode == 0)
+            result_json["stdout"] = result.stdout
 
         except subprocess.CalledProcessError as e:
-            stdout_json = {
-                "success": False,
-                "stdout": e.stdout,
-                "stderr": e.stderr,
-                "returncode": e.returncode,
-            }
+            result_json["success"] = False
+            result_json["stdout"] = e.stdout
+            result_json["stderr"] = e.stderr
+            result_json["returncode"] = e.returncode
+        
+        after = get_latest_deployment(cluster_release_name, cluster_namespace, kubeconfig_path)
 
-        return stdout_json
+        result_json["commit_changes"] = after["revision"] > before["revision"]
+
+        return result_json
+    
+def get_latest_deployment(cluster_release_name, cluster_namespace, kubeconfig_path):
+    cmd = [
+        "helm", "history", cluster_release_name,
+        "-n", cluster_namespace,
+        "--kubeconfig", kubeconfig_path,
+        "-o", "json"
+    ]
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        return {"revision": 0, "chart": None}
+
+    history = json.loads(result.stdout)
+    if not history:
+        return {"revision": 0, "chart": None}
+
+    latest = history[-1]
+    return {
+        "revision": int(latest["revision"]),
+        "chart": latest["chart"]
+    }

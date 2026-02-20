@@ -48,10 +48,10 @@ def add_service_form():
         )
         return redirect(url_for("service_handling.add_service"))
 
-    stdout_json = deploy_service(helm_chart_url, helm_chart_name, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name, rollback_on_failure)
+    result_json = deploy_service(helm_chart_url, helm_chart_name, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name, rollback_on_failure)
 
-    if not stdout_json or not stdout_json.get("success"):
-        error_msg = (stdout_json.get("stderr") or stdout_json.get("stdout") or "unknown error")
+    if not result_json or not result_json.get("success"):
+        error_msg = (result_json.get("stderr") or result_json.get("stdout") or "unknown error")
 
         flash(
             f"Deployment failed for [{cluster_namespace}]: {error_msg}",
@@ -62,7 +62,8 @@ def add_service_form():
             f"Deployment of [{cluster_namespace}] succeeded",
             "message-status-true",
         )
-
+    
+    if result_json.get("commit_changes"):
         commit_helm_chart(helm_chart_url, helm_chart_name, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name)
 
     return redirect(url_for("service_handling.add_service"))
