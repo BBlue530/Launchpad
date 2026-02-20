@@ -29,6 +29,8 @@ def add_service_form():
     cluster_namespace = request.form.get("cluster_namespace")
     cluster_release_name = request.form.get("cluster_release_name")
 
+    rollback_on_failure = request.form.get("rollback_on_failure")
+
     required_inputs = [helm_chart_url, cluster_namespace, cluster_release_name]
     if not all(required_inputs):
         flash(
@@ -46,7 +48,7 @@ def add_service_form():
         )
         return redirect(url_for("service_handling.add_service"))
 
-    stdout_json = deploy_service(helm_chart_url, helm_chart_name, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name)
+    stdout_json = deploy_service(helm_chart_url, helm_chart_name, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name, rollback_on_failure)
 
     if not stdout_json or not stdout_json.get("success"):
         error_msg = (stdout_json.get("stderr") or stdout_json.get("stdout") or "unknown error")

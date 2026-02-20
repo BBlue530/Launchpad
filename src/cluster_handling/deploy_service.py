@@ -4,7 +4,7 @@ import tempfile
 import base64
 import yaml
 
-def deploy_service(helm_chart_url, helm_chart_name, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name):
+def deploy_service(helm_chart_url, helm_chart_name, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name, rollback_on_failure):
     cluster_api_server = os.environ.get("cluster_api_server")
     cluster_token = os.environ.get("cluster_token")
     cluster_ca_cert = os.environ.get("cluster_ca_cert")
@@ -72,11 +72,15 @@ def deploy_service(helm_chart_url, helm_chart_name, helm_chart_version, helm_cha
         helm_install_cmd.extend([
             "--namespace", cluster_namespace,
             "--create-namespace",
-            "--rollback-on-failure",
             "--timeout", "10m",
             "-f", values_path,
             "--kubeconfig", kubeconfig_path,
         ])
+
+        if rollback_on_failure:
+            helm_install_cmd.extend([
+                "--rollback-on-failure",
+            ])
 
         if helm_chart_version:
             helm_install_cmd.extend(["--version", helm_chart_version])
