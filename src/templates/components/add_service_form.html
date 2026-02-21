@@ -42,5 +42,39 @@
                 <button type="reset" class="btn-secondary">Cancel</button>
             </div>
         </form>
+        
+        <div id="loading-overlay" class="loading-overlay loading-hidden">
+            <div class="loading-box">
+                <div class="loading-spinner"></div>
+                <div id="loading-text" class="loading-text">
+                    Deploying service...
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<script>
+    document.querySelector(".input-form").addEventListener("submit", function(e) {
+        const overlay = document.getElementById("loading-overlay");
+        const text = document.getElementById("loading-text");
+        const submitButton = document.querySelector("button[type='submit']");
+
+        submitButton.disabled = true;
+        overlay.classList.add("active");
+
+        const randomChance = Math.random();
+        if (randomChance <= 0.01) {
+            text.innerHTML = `
+                <div style="color: #ff4444; font-size: 22px;">
+                    THE OMNISSIAH BLESSES THIS DEPLOYMENT
+                </div>
+                <div style="margin-top: 10px;">
+                    Sacred machine spirits are being appeased...
+                </div>
+            `;
+        } else {
+            text.innerHTML = "Deploying service...";
+        }
+    });
+</script>
