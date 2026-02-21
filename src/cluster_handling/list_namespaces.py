@@ -55,7 +55,7 @@ def list_all_namespaces():
 
         endpoint_map = {}
 
-        for ep in endpoint_slices["items"]:
+        for ep in (endpoint_slices.get("items") or []):
 
             namespace = ep["metadata"]["namespace"]
 
@@ -70,7 +70,7 @@ def list_all_namespaces():
 
             key = f"{namespace}/{service_name}"
 
-            for endpoint in ep.get("endpoints", []):
+            for endpoint in (ep.get("endpoints") or []):
 
                 if endpoint.get("conditions", {}).get("ready", True):
 
