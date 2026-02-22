@@ -10,10 +10,10 @@
                 <div class="dropdown status-dropdown">
                     <a href="{{ item.url }}"
                     class="status-item status-{{ item.state }}"
-                    title="View logs for {{ item.name }}">
+                    title="View logs for {{ item.namespace }}">
 
-                        <span class="status-label">{{ item.name }}</span>
-                        <span class="status-module">{{ item.namespace }}</span>
+                        <span class="status-label">{{ item.release_name }}/{{ item.namespace }}</span>
+                        <span class="status-module">Age: {{ item.age }}</span>
                     </a>
 
                     <div class="dropdown-content">

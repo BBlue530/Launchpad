@@ -14,3 +14,15 @@ def format_timestamp(timestamp):
     if hours > 0:
         return f"{hours}h"
     return f"{minutes}m"
+
+def age_to_minutes(age_str: str) -> int:
+    value = int(age_str[:-1])
+    unit = age_str[-1]
+
+    if unit == "d":
+        return value * 24 * 60
+    if unit == "h":
+        return value * 60
+    if unit == "m":
+        return value
+    return 0
