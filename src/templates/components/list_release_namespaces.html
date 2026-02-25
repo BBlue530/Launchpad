@@ -1,0 +1,28 @@
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='components_style.css') }}">
+
+<div class="content-center">
+    <div class="panel input-panel">
+        <div class="panel-header">
+            All Release Namespaces
+        </div>
+        <div class="top-left status-bar">
+            {% for item in all_release_namespaces %}
+                <div class="dropdown status-dropdown">
+                    <a href="{{ item.url }}"
+                    class="status-item status-{{ item.state }}"
+                    title="View logs for {{ item.namespace }}">
+
+                        <span class="status-label">{{ item.release_namespace }}</span>
+                        <span class="status-module">Age: {{ item.age }}</span>
+                    </a>
+
+                    <div class="dropdown-content">
+                        <div class="status-message status-{{ item.state }}">
+                            {{ item.message }}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>

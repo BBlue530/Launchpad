@@ -2,7 +2,7 @@ from flask import render_template, request, Blueprint, redirect, url_for, flash
 import yaml
 from cluster_handling.deploy_service import deploy_service
 from gitops_handling.gitops_commit import commit_helm_chart
-from cluster_handling.list_namespaces import list_all_namespaces, list_unique_namespaces
+from cluster_handling.list_namespaces import list_all_namespaces, list_unique_release_namespaces
 from service_status.external_connectivity import system_connectivity_status
 from core.variables import *
 
@@ -16,9 +16,9 @@ def add_service():
         message = request.args.get('message')
 
     all_namespaces = list_all_namespaces()
-    all_namespaces = list_unique_namespaces(all_namespaces)
+    all_release_namespaces = list_unique_release_namespaces(all_namespaces)
 
-    return render_template("add_service.html", system_status=system_connectivity_status, all_namespaces=all_namespaces, user=user, message=message)
+    return render_template("add_service.html", system_status=system_connectivity_status, all_release_namespaces=all_release_namespaces, user=user, message=message)
 
 @service_handling_bp.route("/add_service_form", methods=["POST"])
 def add_service_form():

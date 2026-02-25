@@ -4,7 +4,8 @@ import base64
 import yaml
 from helpers.time_format import format_timestamp, age_to_minutes
 from helpers.kubectl import run_kubectl
-from core.variables import cluster_service_endpoint, cluster_error_message, cluster_warning_message, cluster_neutral_message, cluster_ok_message
+from helpers.state_check import check_state
+from core.variables import cluster_observability_endpoint
 
 def list_all_namespaces():
     cluster_api_server = os.environ.get("cluster_api_server")
@@ -90,7 +91,8 @@ def list_all_namespaces():
             release_name = labels.get("app.kubernetes.io/instance")
 
             key = f"{namespace}/{name}"
-
+            release_namespace = f"{namespace}/{release_name}"
+            
             age = format_timestamp(svc["metadata"]["creationTimestamp"])
 
             spec = svc.get("spec", {})
@@ -157,7 +159,8 @@ def list_all_namespaces():
 
             all_namespaces.append({
                 "release_name": release_name,
-                "name": key,
+                "release_namespace": release_namespace,
+                "service_name": key,
                 "namespace": namespace,
                 "age": age,
                 "state": state,
@@ -167,67 +170,44 @@ def list_all_namespaces():
 
         return all_namespaces
     
-def list_unique_namespaces(all_namespaces):
-    unique_namespaces = {}
+def list_unique_release_namespaces(all_namespaces):
+    unique_release_namespaces = {}
 
     for entry in all_namespaces:
-        if entry["namespace"] not in unique_namespaces:
-            unique_namespaces[entry["namespace"]] = {
-                "release_name": entry.get("release_name"),
+        if entry["release_namespace"] not in unique_release_namespaces:
+            unique_release_namespaces[entry["release_namespace"]] = {
+                "release_namespace": entry.get("release_namespace"),
                 "namespace": entry.get("namespace"),
                 "age": entry.get("age"),
                 "state": entry.get("state"),
-                "url": f"{cluster_service_endpoint}{entry.get('release_name')}/{entry.get('namespace')}"
+                "url": f"{cluster_observability_endpoint}?release_name={entry.get('release_name')}&namespace={entry.get('namespace')}"
             }
 
-        stored_age = age_to_minutes(unique_namespaces[entry["namespace"]]["age"])
+        stored_age = age_to_minutes(unique_release_namespaces[entry["release_namespace"]]["age"])
         entry_age = age_to_minutes(entry.get("age"))
 
         if entry_age > stored_age:
-            unique_namespaces[entry["namespace"]]["age"] = entry.get("age")
+            unique_release_namespaces[entry["release_namespace"]]["age"] = entry.get("age")
         
-        if entry.get("state") == "error" or unique_namespaces[entry["namespace"]]["state"] == "error":
-            unique_namespaces[entry["namespace"]]["state"] = "error"
-            unique_namespaces[entry["namespace"]]["message"] = cluster_error_message
+        state_message, stored_state = check_state(unique_release_namespaces[entry["release_namespace"]]["state"], entry.get("state"))
 
-        elif entry.get("state") == "warning" or unique_namespaces[entry["namespace"]]["state"]  == "warning":
-            unique_namespaces[entry["namespace"]]["state"] = "warning"
-            unique_namespaces[entry["namespace"]]["message"] = cluster_warning_message
+        unique_release_namespaces[entry["release_namespace"]]["state"] = stored_state
+        unique_release_namespaces[entry["release_namespace"]]["message"] = state_message
 
-        elif entry.get("state") == "neutral" or unique_namespaces[entry["namespace"]]["state"]  == "neutral":
-            unique_namespaces[entry["namespace"]]["state"] = "neutral"
-            unique_namespaces[entry["namespace"]]["message"] = cluster_neutral_message
+    return list(unique_release_namespaces.values())
 
-        elif entry.get("state") == "ok" or unique_namespaces[entry["namespace"]]["state"]  == "ok":
-            unique_namespaces[entry["namespace"]]["state"] = "ok"
-            unique_namespaces[entry["namespace"]]["message"] = cluster_ok_message
+def list_unique_release_name_namespace_services(all_namespaces, release_name, namespace):
+    release_name_namespace_services = {}
 
-    return list(unique_namespaces.values())
-    
-def list_all_namespaces_test():
-    # Mock data
-    all_namespaces = []
+    for entry in all_namespaces:
+        if entry["release_name"] == release_name and entry["namespace"] == namespace:
+            if entry["service_name"] not in release_name_namespace_services:
+                release_name_namespace_services[entry["service_name"]] = {
+                    "service_name": entry.get("service_name"),
+                    "age": entry.get("age"),
+                    "state": entry.get("state"),
+                    "message": entry.get("message"),
+                    "url": entry.get("url")
+                }
 
-    mock_cluster = [
-        ("ci-test", "default", "default/frontend", "5d", "ok", "Service healthy"),
-        ("ci-test", "default", "default/backend", "5d", "error", "No active endpoints"),
-        ("ci-prod", "kube-system", "kube-system/coredns", "30d", "ok", "Service healthy"),
-        ("ci-prod", "monitoring", "monitoring/prometheus", "12d", "warning", "LoadBalancer pending"),
-        ("ci-dev", "dev", "dev/api", "2d", "neutral", "External service"),
-        ("ci-dev", "dev", "dev/headless-db", "1d", "ok", "Headless service healthy"),
-        ("ci-dev", "dev", "dev/manual-service", "3d", "warning", "No endpoints (manual service)"),
-    ]
-
-    for release_name, namespace, key, age, state, message in mock_cluster:
-
-        all_namespaces.append({
-            "release_name": release_name,
-            "name": key,
-            "namespace": namespace,
-            "age": age,
-            "state": state,
-            "message": message,
-            "url": "/tmp_url"
-        })
-
-    return all_namespaces
+    return list(release_name_namespace_services.values())

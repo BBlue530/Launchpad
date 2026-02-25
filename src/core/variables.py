@@ -14,7 +14,7 @@ state_key = "state"
 message_key = "message"
 logs_key = "logs"
 
-cluster_service_endpoint = "/cluster/service/"
+cluster_observability_endpoint = "/cluster/observability"
 
 cluster_error_message = "Namespace has one or more failing services."
 cluster_warning_message = "Degraded performance or partial failures detected."
