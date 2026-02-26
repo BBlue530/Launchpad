@@ -23,8 +23,8 @@ def commit_helm_chart(helm_chart_url, helm_chart_name, helm_chart_version, helm_
 
     helm_chart_metadata = {
         "helm_chart_url": helm_chart_url,
-        "helm_chart_version": helm_chart_version,
         "helm_chart_name": helm_chart_name,
+        "helm_chart_version": helm_chart_version,
         "timestamp": timestamp
     }
 
@@ -49,9 +49,11 @@ def commit_helm_chart(helm_chart_url, helm_chart_name, helm_chart_version, helm_
     with tempfile.TemporaryDirectory() as tmp_repo_dir, tempfile.TemporaryDirectory() as tmp_gpg_dir:
 
         subprocess.run(["git", "clone", "--branch", gitops_branch_name, gitops_repository_with_pat, tmp_repo_dir], check=True)
+
+        release_namespace = f"{cluster_namespace}/{cluster_release_name}"
         
-        helm_chart_values_path = os.path.join(tmp_repo_dir, cluster_release_name, gitops_helm_chart_deployment, cluster_namespace, "values.yaml")
-        helm_chart_metadata_path = os.path.join(tmp_repo_dir, cluster_release_name, gitops_helm_chart_deployment, cluster_namespace, "metadata.yaml")
+        helm_chart_values_path = os.path.join(tmp_repo_dir, gitops_helm_chart_deployment, cluster_release_name, release_namespace, "values.yaml")
+        helm_chart_metadata_path = os.path.join(tmp_repo_dir, gitops_helm_chart_deployment, cluster_release_name, release_namespace, "metadata.yaml")
 
         os.makedirs(os.path.dirname(helm_chart_metadata_path), exist_ok=True)
         with open(helm_chart_metadata_path, "w") as f:
@@ -61,14 +63,9 @@ def commit_helm_chart(helm_chart_url, helm_chart_name, helm_chart_version, helm_
         with open(helm_chart_values_path, "w") as f:
             yaml.dump(helm_chart_values, f)
 
-        backup_helm_chart_values_path = os.path.join(tmp_repo_dir, cluster_release_name, gitops_backup_helm_chart_deployment, cluster_namespace, "values.yaml")
-        backup_helm_chart_dir = os.path.join(tmp_repo_dir, cluster_release_name, gitops_backup_helm_chart_deployment, cluster_namespace)
+        backup_helm_chart_dir = os.path.join(tmp_repo_dir, gitops_backup_helm_chart_deployment, f"{helm_chart_name}_{helm_chart_version}")
 
         pull_helm_chart(helm_chart_url, helm_chart_version, helm_chart_name, backup_helm_chart_dir, cluster_namespace, cluster_release_name)
-
-        os.makedirs(os.path.dirname(backup_helm_chart_values_path), exist_ok=True)
-        with open(backup_helm_chart_values_path, "w") as f:
-            yaml.dump(helm_chart_values, f)
 
         gpg_sign_config(gitops_gpg_priv_key_id, gitops_gpg_priv_key, tmp_repo_dir)
 
@@ -76,7 +73,7 @@ def commit_helm_chart(helm_chart_url, helm_chart_name, helm_chart_version, helm_
         subprocess.run(["git", "config", "--local", "user.email", gitops_user_email], cwd=tmp_repo_dir, check=True)
 
         subprocess.run(["git", "add", "."], cwd=tmp_repo_dir, check=True)
-        commit_cmd = ["git", "commit", "-m", f"bot: Update {cluster_release_name} Helm chart and values"]
+        commit_cmd = ["git", "commit", "-m", f"bot({release_namespace}): Update Helm chart and values [{timestamp}]."]
 
         if gitops_gpg_priv_key and gitops_gpg_priv_key_id:
             commit_cmd.insert(2, "-S")
