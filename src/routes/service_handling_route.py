@@ -1,6 +1,6 @@
 from flask import render_template, request, Blueprint, redirect, url_for, flash
 import yaml
-from cluster_handling.deploy_service import deploy_service
+from cluster_handling.deploy_service import helm_chart_handling
 from gitops_handling.gitops_commit import commit_helm_chart
 from cluster_handling.list_namespaces import list_all_namespaces, list_unique_release_namespaces
 from service_status.external_connectivity import system_connectivity_status
@@ -30,6 +30,8 @@ def add_service_form():
     cluster_namespace = request.form.get("cluster_namespace")
     cluster_release_name = request.form.get("cluster_release_name")
 
+    deploy_backup_helm_chart = request.form.get("deploy_backup_helm_chart")
+
     required_inputs = [helm_chart_url, cluster_namespace, cluster_release_name]
     if not all(required_inputs):
         flash(
@@ -47,7 +49,7 @@ def add_service_form():
         )
         return redirect(url_for("service_handling.add_service"))
 
-    result_json = deploy_service(helm_chart_url, helm_chart_name, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name)
+    result_json = helm_chart_handling(helm_chart_url, helm_chart_name, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name, deploy_backup_helm_chart)
 
     if not result_json or not result_json.get("success"):
         error_msg = (result_json.get("stderr") or result_json.get("stdout") or "unknown error")
@@ -63,6 +65,6 @@ def add_service_form():
         )
     
     if result_json.get("commit_changes"):
-        commit_helm_chart(helm_chart_url, helm_chart_name, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name)
+        commit_helm_chart(helm_chart_url, helm_chart_name, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name, deploy_backup_helm_chart)
 
     return redirect(url_for("service_handling.add_service"))
