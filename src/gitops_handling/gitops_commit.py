@@ -1,9 +1,11 @@
+from flask import flash
 import os
 import tempfile
 import subprocess
 from datetime import datetime
 import yaml
 import shutil
+import json
 from core.variables import *
 
 def commit_helm_chart(helm_chart_url, helm_chart_name, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name, deploy_backup_helm_chart):
@@ -20,18 +22,6 @@ def commit_helm_chart(helm_chart_url, helm_chart_name, helm_chart_version, helm_
     gitops_repository_with_pat = gitops_repository.replace("https://", f"https://{gitops_pat}@")
 
     timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-
-    helm_chart_metadata = {
-        "helm_chart_url": helm_chart_url,
-        "helm_chart_name": helm_chart_name,
-        "helm_chart_version": helm_chart_version,
-        "timestamp": timestamp
-    }
-
-    if deploy_backup_helm_chart:
-        helm_chart_metadata["backup_helm_chart_deployed"] = True
-    else:
-        helm_chart_metadata["backup_helm_chart_deployed"] = False
 
     result = subprocess.run(["git", "ls-remote", "--heads", gitops_repository_with_pat, gitops_branch_name], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
 
@@ -57,8 +47,28 @@ def commit_helm_chart(helm_chart_url, helm_chart_name, helm_chart_version, helm_
 
         release_namespace = f"{cluster_namespace}/{cluster_release_name}"
         
+        backup_helm_chart_dir = os.path.join(tmp_repo_dir, gitops_backup_helm_chart_deployment, f"{helm_chart_name}_{helm_chart_version}")
+
         helm_chart_values_path = os.path.join(tmp_repo_dir, gitops_helm_chart_deployment, cluster_release_name, release_namespace, "values.yaml")
         helm_chart_metadata_path = os.path.join(tmp_repo_dir, gitops_helm_chart_deployment, cluster_release_name, release_namespace, "metadata.yaml")
+
+        if not deploy_backup_helm_chart:
+            pulled_helm_chart_version = pull_helm_chart(helm_chart_url, helm_chart_version, helm_chart_name, backup_helm_chart_dir, cluster_namespace, cluster_release_name)
+            if not pulled_helm_chart_version:
+                return
+        else:
+            pulled_helm_chart_version = helm_chart_version
+            
+        helm_chart_metadata = {
+            "helm_chart_url": helm_chart_url,
+            "helm_chart_name": helm_chart_name,
+            "helm_chart_version": pulled_helm_chart_version,
+            "timestamp": timestamp,
+            "backup_helm_chart_deployed": False
+        }
+
+        if deploy_backup_helm_chart:
+            helm_chart_metadata["backup_helm_chart_deployed"] = True
 
         os.makedirs(os.path.dirname(helm_chart_metadata_path), exist_ok=True)
         with open(helm_chart_metadata_path, "w") as f:
@@ -67,12 +77,7 @@ def commit_helm_chart(helm_chart_url, helm_chart_name, helm_chart_version, helm_
         os.makedirs(os.path.dirname(helm_chart_values_path), exist_ok=True)
         with open(helm_chart_values_path, "w") as f:
             yaml.dump(helm_chart_values, f)
-
-        backup_helm_chart_dir = os.path.join(tmp_repo_dir, gitops_backup_helm_chart_deployment, f"{helm_chart_name}_{helm_chart_version}")
-
-        if not deploy_backup_helm_chart:
-            pull_helm_chart(helm_chart_url, helm_chart_version, helm_chart_name, backup_helm_chart_dir, cluster_namespace, cluster_release_name)
-
+            
         gpg_sign_config(gitops_gpg_priv_key_id, gitops_gpg_priv_key, tmp_repo_dir, tmp_gpg_dir)
 
         subprocess.run(["git", "config", "--local", "user.name", gitops_user_name], cwd=tmp_repo_dir, check=True)
@@ -103,9 +108,34 @@ def pull_helm_chart(helm_chart_url, helm_chart_version, chart_name, helm_chart_d
     pull_helm_chart_cmd = ["helm", "pull", f"{helm_repo}/{chart_name}", "--untar", f"--untardir={helm_chart_dir}"]
     if helm_chart_version:
         pull_helm_chart_cmd.extend(["--version", helm_chart_version])
+        pulled_helm_chart_version = helm_chart_version
+
+    else:
+        search_helm_chart_version_cmd = [
+            "helm",
+            "search",
+            "repo", f"{helm_repo}/{chart_name}",
+            "--versions",
+            "-o", "json",
+        ]
+
+        search_result = subprocess.run(search_helm_chart_version_cmd, capture_output=True, text=True, check=True)
+        charts = json.loads(search_result.stdout)
+
+        if not charts:
+            flash(
+                f"Deployment failed for [{cluster_namespace}]: Chart version not found in pulled repository.",
+                "message-status-false"
+            )
+            return False
+
+        pulled_helm_chart_version = charts[0]["version"]
+        pull_helm_chart_cmd.extend(["--version", pulled_helm_chart_version])
 
     subprocess.run(pull_helm_chart_cmd, check=True)
     subprocess.run(["helm", "repo", "remove", helm_repo], check=True)
+
+    return pulled_helm_chart_version
 
 def gpg_sign_config(gitops_gpg_priv_key_id, gitops_gpg_priv_key, tmp_repo_dir, tmp_gpg_dir):
     if gitops_gpg_priv_key and gitops_gpg_priv_key_id:

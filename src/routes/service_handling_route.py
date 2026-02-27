@@ -32,7 +32,10 @@ def add_service_form():
 
     deploy_backup_helm_chart = request.form.get("deploy_backup_helm_chart")
 
-    required_inputs = [helm_chart_url, cluster_namespace, cluster_release_name]
+    required_inputs = [cluster_namespace, cluster_release_name]
+    if not deploy_backup_helm_chart:
+        required_inputs.append(helm_chart_url)
+
     if not all(required_inputs):
         flash(
             "Missing required deployment fields",
