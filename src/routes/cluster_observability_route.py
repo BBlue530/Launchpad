@@ -1,5 +1,6 @@
 from flask import request, Blueprint, render_template
 from cluster_handling.list_namespaces import list_all_namespaces, list_unique_release_namespaces, list_unique_release_name_namespace_services
+from helpers.logs import log_handling
 from service_status.external_connectivity import system_connectivity_status
 from core.variables import *
 
@@ -22,5 +23,12 @@ def cluster_observability():
 
     if release_name and namespace:
         all_release_namespace_services = list_unique_release_name_namespace_services(all_namespaces, release_name, namespace)
+
+    log_handling({
+        "message": f"Cluster observability endpoint called",
+        "level": "info",
+        "module": "cluster_observability",
+        "client_ip": request.remote_addr,
+    })
 
     return render_template("cluster_observability_release_names.html", system_status=system_connectivity_status, all_release_namespace_services=all_release_namespace_services, all_release_namespaces=all_release_namespaces, user=user, message=message)

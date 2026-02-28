@@ -3,6 +3,7 @@ import yaml
 from cluster_handling.deploy_service import helm_chart_handling
 from gitops_handling.gitops_commit import commit_helm_chart
 from cluster_handling.list_namespaces import list_all_namespaces, list_unique_release_namespaces
+from helpers.logs import log_handling
 from service_status.external_connectivity import system_connectivity_status
 from core.variables import *
 
@@ -17,6 +18,13 @@ def add_service():
 
     all_namespaces = list_all_namespaces()
     all_release_namespaces = list_unique_release_namespaces(all_namespaces)
+
+    log_handling({
+        "message": f"Add service endpoint called",
+        "level": "info",
+        "module": "add_service",
+        "client_ip": request.remote_addr,
+    })
 
     return render_template("add_service.html", system_status=system_connectivity_status, all_release_namespaces=all_release_namespaces, user=user, message=message)
 
@@ -69,5 +77,12 @@ def add_service_form():
     
     if result_json.get("commit_changes"):
         commit_helm_chart(helm_chart_url, helm_chart_name, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name, deploy_backup_helm_chart)
+
+    log_handling({
+        "message": f"Add service form endpoint called",
+        "level": "info",
+        "module": "add_service_form",
+        "client_ip": request.remote_addr,
+    })
 
     return redirect(url_for("service_handling.add_service"))

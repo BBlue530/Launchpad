@@ -55,6 +55,9 @@ def list_all_namespaces():
         services = run_kubectl(kubeconfig_path, ["get", "svc", "-A", "-o", "json"])
         endpoint_slices = run_kubectl(kubeconfig_path, ["get", "endpointslices", "-A", "-o", "json"])
 
+        if not services or not endpoint_slices:
+            return []
+
         endpoint_map = {}
 
         for ep in (endpoint_slices.get("items") or []):
