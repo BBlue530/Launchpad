@@ -10,9 +10,17 @@ db_name = "Database"
 db_log_endpoint = "/logs/connectivity/database"
 db_module_name = "database.postgresql"
 
+name_key = "name"
+url_key = "url"
+module_key = "module"
 state_key = "state"
 message_key = "message"
 logs_key = "logs"
+connected_key = "connected"
+
+default_state = "neutral"
+default_connected_state = False
+default_message = "Not checked"
 
 cluster_observability_endpoint = "/cluster/observability"
 

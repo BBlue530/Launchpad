@@ -4,13 +4,19 @@ from service_status.connectivity.cluster_connectivity import check_cluster_conne
 
 system_connectivity_status = []
 
-def check_external_connectivity():
+def check_external_connectivity(sleep_loop):
     global system_connectivity_status
 
-    gitops_connectivity = check_gitops_connectivity()
-    cluster_connectivity = check_cluster_connectivity()
+    while True:
 
-    system_connectivity_status.append(gitops_connectivity)
-    system_connectivity_status.append(cluster_connectivity)
+        gitops_connectivity = check_gitops_connectivity()
+        cluster_connectivity = check_cluster_connectivity()
 
-    sleep(300)
+        system_connectivity_status.clear()
+        system_connectivity_status.append(gitops_connectivity)
+        system_connectivity_status.append(cluster_connectivity)
+
+        if not sleep_loop:
+            break
+        
+        sleep(300)

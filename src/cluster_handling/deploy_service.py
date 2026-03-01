@@ -1,11 +1,29 @@
+from flask import flash
 import os
 import tempfile
 import base64
 import yaml
 from cluster_handling.deploy_helm_chart import helm_chart_deploy
 from cluster_handling.deploy_backup_helm_chart import helm_chart_deploy_backup
+from service_status.external_connectivity import check_external_connectivity
+from service_status.external_connectivity import system_connectivity_status
+from core.variables import connected_key, name_key, message_key
 
 def helm_chart_handling(helm_chart_url, helm_chart_name, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name, deploy_backup_helm_chart):
+    check_external_connectivity(False)
+    connectivity_success = True
+
+    for connectivity in system_connectivity_status:
+        if not connectivity.get(connected_key):
+            flash(
+                f"External connectivity failed for {connectivity.get(name_key)}. {connectivity.get(message_key)}.",
+                "message-status-false"
+            )
+            connectivity_success = False
+    if not connectivity_success:
+        return {}
+
+
     cluster_api_server = os.environ.get("cluster_api_server")
     cluster_token = os.environ.get("cluster_token")
     cluster_ca_cert = os.environ.get("cluster_ca_cert")

@@ -2,10 +2,10 @@ import subprocess
 import os
 from datetime import datetime
 import tempfile
-from core.variables import gitops_name, gitops_logs_endpoint, gitops_module_name, state_key, message_key, logs_key
+from core.variables import name_key, gitops_name, url_key, gitops_logs_endpoint, module_key, gitops_module_name, state_key, default_state, connected_key, default_connected_state, message_key, default_message, logs_key
 
 def check_gitops_connectivity():
-    gitops_connectivity = {"name": gitops_name, "url": gitops_logs_endpoint, "module": gitops_module_name, state_key: "neutral", message_key: "Not checked", logs_key: []}
+    gitops_connectivity = {name_key: gitops_name, url_key: gitops_logs_endpoint, module_key: gitops_module_name, state_key: default_state, connected_key: default_connected_state, message_key: default_message, logs_key: []}
     logs = []
     gitops_connectivity[logs_key] = logs
 
@@ -22,6 +22,7 @@ def check_gitops_connectivity():
         message = "Gitops configuration missing"
         gitops_connectivity[message_key] = message
         gitops_connectivity[state_key] = "error"
+        gitops_connectivity[connected_key] = False
         logs.append(f"missing environment variables. timestamp: [{timestamp}]")
         print(f"[!] {message}")
         return gitops_connectivity
@@ -34,6 +35,7 @@ def check_gitops_connectivity():
         message = "Repository is reachable"
         gitops_connectivity[message_key] = message
         gitops_connectivity[state_key] = "ok"
+        gitops_connectivity[connected_key] = True
         logs.append(f"repository is reachable. timestamp: [{timestamp}]. repository [{gitops_repository}].")
         print(f"[+] {message}")
 
@@ -41,6 +43,7 @@ def check_gitops_connectivity():
         message = "Repository is not reachable"
         gitops_connectivity[message_key] = message
         gitops_connectivity[state_key] = "error"
+        gitops_connectivity[connected_key] = False
         logs.append(f"repository is not reachable. timestamp: [{timestamp}]. repository [{gitops_repository}].")
         print(f"[!] {message}")
         return gitops_connectivity
@@ -49,6 +52,7 @@ def check_gitops_connectivity():
         message = "Repository check timed out"
         gitops_connectivity[message_key] = message
         gitops_connectivity[state_key] = "error"
+        gitops_connectivity[connected_key] = False
         logs.append("repository check timed out")
         print(f"[!] {message}")
         return gitops_connectivity
@@ -61,6 +65,7 @@ def check_gitops_connectivity():
             message = f"Repository reachable and branch '{gitops_branch_name}' exists"
             gitops_connectivity[message_key] = message
             gitops_connectivity[state_key] = "ok"
+            gitops_connectivity[connected_key] = True
             logs.append(f"branch {gitops_branch_name} exists at [{timestamp}]")
             print(f"[+] {message}")
 
@@ -86,9 +91,11 @@ def check_gitops_connectivity():
                 if "403" in stderr or "permission" in stderr:
                     message = "PAT lacks permission"
                     gitops_connectivity[state_key] = "error"
+                    gitops_connectivity[connected_key] = False
                 else:
                     message = "Permission check failed"
                     gitops_connectivity[state_key] = "warning"
+                    gitops_connectivity[connected_key] = False
 
                 gitops_connectivity[message_key] = message
                 logs.append(stderr.strip())
@@ -99,6 +106,7 @@ def check_gitops_connectivity():
                 message = "Permission check timed out"
                 gitops_connectivity[message_key] = message
                 gitops_connectivity[state_key] = "error"
+                gitops_connectivity[connected_key] = False
                 logs.append("Permission check timed out")
                 print(f"[!] {message}")
                 return gitops_connectivity
@@ -107,6 +115,7 @@ def check_gitops_connectivity():
             message = f"Repository reachable but branch '{gitops_branch_name}' missing"
             gitops_connectivity[message_key] = message
             gitops_connectivity[state_key] = "warning"
+            gitops_connectivity[connected_key] = False
             logs.append(f"branch {gitops_branch_name} missing at [{timestamp}]")
             print(f"[!] {message}")
 
@@ -114,6 +123,7 @@ def check_gitops_connectivity():
         message = "Repository reachable but branch check failed"
         gitops_connectivity[message_key] = message
         gitops_connectivity[state_key] = "warning"
+        gitops_connectivity[connected_key] = False
         logs.append(e.stderr.decode().strip())
         print(f"[!] {message}")
         return gitops_connectivity
@@ -122,6 +132,7 @@ def check_gitops_connectivity():
         message = "Repository check timed out"
         gitops_connectivity[message_key] = message
         gitops_connectivity[state_key] = "error"
+        gitops_connectivity[connected_key] = False
         logs.append("repository check timed out")
         print(f"[!] {message}")
         return gitops_connectivity

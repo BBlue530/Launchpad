@@ -15,7 +15,7 @@ app.register_blueprint(home_bp)
 app.register_blueprint(service_handling_bp)
 app.register_blueprint(observability_handling_bp)
 
-check_connectivity_process_thread = threading.Thread(target=check_external_connectivity, daemon=True)
+check_connectivity_process_thread = threading.Thread(target=check_external_connectivity, args=(True,), daemon=True)
 
 if __name__ == "__main__":
     read_config()
