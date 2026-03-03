@@ -9,7 +9,7 @@ from service_status.external_connectivity import check_external_connectivity
 from service_status.external_connectivity import system_connectivity_status
 from core.variables import connected_key, name_key, message_key
 
-def helm_chart_handling(helm_chart_url, helm_chart_name, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name, deploy_backup_helm_chart):
+def helm_chart_handling(helm_chart_url, helm_chart_name, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name, deploy_backup_helm_chart, force_deploy_helm_chart):
     check_external_connectivity(False)
     connectivity_success = True
 
@@ -72,8 +72,8 @@ def helm_chart_handling(helm_chart_url, helm_chart_name, helm_chart_version, hel
             yaml.safe_dump(helm_chart_values, f)
 
         if deploy_backup_helm_chart:
-            result_json = helm_chart_deploy_backup(helm_chart_name, helm_chart_version, cluster_namespace, cluster_release_name, values_path, kubeconfig_path)
+            result_json = helm_chart_deploy_backup(helm_chart_name, helm_chart_version, cluster_namespace, cluster_release_name, values_path, kubeconfig_path, force_deploy_helm_chart)
         else:
-            result_json = helm_chart_deploy(helm_chart_url, helm_chart_name, helm_chart_version, cluster_namespace, cluster_release_name, values_path, kubeconfig_path)
+            result_json = helm_chart_deploy(helm_chart_url, helm_chart_name, helm_chart_version, cluster_namespace, cluster_release_name, values_path, kubeconfig_path, force_deploy_helm_chart)
 
         return result_json

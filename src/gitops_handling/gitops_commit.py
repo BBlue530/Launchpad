@@ -8,7 +8,7 @@ import shutil
 import json
 from core.variables import *
 
-def commit_helm_chart(helm_chart_url, helm_chart_name, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name, deploy_backup_helm_chart):
+def commit_helm_chart(helm_chart_url, helm_chart_name, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name, deploy_backup_helm_chart, force_deploy_helm_chart):
     gitops_repository = os.environ.get("gitops_repository")
     gitops_pat = os.environ.get("gitops_pat")
     gitops_branch_name = os.environ.get("gitops_branch_name")
@@ -64,11 +64,15 @@ def commit_helm_chart(helm_chart_url, helm_chart_name, helm_chart_version, helm_
             "helm_chart_name": helm_chart_name,
             "helm_chart_version": pulled_helm_chart_version,
             "timestamp": timestamp,
-            "backup_helm_chart_deployed": False
+            "backup_helm_chart_deployed": False,
+            "force_deploy_helm_chart": False
         }
 
         if deploy_backup_helm_chart:
             helm_chart_metadata["backup_helm_chart_deployed"] = True
+
+        if force_deploy_helm_chart:
+            helm_chart_metadata["backup_helforce_deploy_helm_chartm_chart_deployed"] = True
 
         os.makedirs(os.path.dirname(helm_chart_metadata_path), exist_ok=True)
         with open(helm_chart_metadata_path, "w") as f:

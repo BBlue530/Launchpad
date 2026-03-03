@@ -40,6 +40,8 @@ def add_service_form():
 
     deploy_backup_helm_chart = request.form.get("deploy_backup_helm_chart")
 
+    force_deploy_helm_chart = request.form.get("force_deploy_helm_chart")
+
     required_inputs = [cluster_namespace, cluster_release_name]
     if not deploy_backup_helm_chart:
         required_inputs.append(helm_chart_url)
@@ -60,7 +62,7 @@ def add_service_form():
         )
         return redirect(url_for("service_handling.add_service"))
 
-    result_json = helm_chart_handling(helm_chart_url, helm_chart_name, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name, deploy_backup_helm_chart)
+    result_json = helm_chart_handling(helm_chart_url, helm_chart_name, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name, deploy_backup_helm_chart, force_deploy_helm_chart)
 
     if not result_json or not result_json.get("success"):
         error_msg = (result_json.get("stderr") or result_json.get("stdout") or "unknown error")
@@ -76,7 +78,7 @@ def add_service_form():
         )
     
     if result_json.get("commit_changes"):
-        commit_helm_chart(helm_chart_url, helm_chart_name, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name, deploy_backup_helm_chart)
+        commit_helm_chart(helm_chart_url, helm_chart_name, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name, deploy_backup_helm_chart, force_deploy_helm_chart)
 
     log_handling({
         "message": f"Add service form endpoint called",

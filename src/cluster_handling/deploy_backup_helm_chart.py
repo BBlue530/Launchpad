@@ -4,7 +4,7 @@ import tempfile
 from cluster_handling.cluster_helpers import get_latest_deployment
 from core.variables import gitops_backup_helm_chart_deployment
 
-def helm_chart_deploy_backup(helm_chart_name, helm_chart_version, cluster_namespace, cluster_release_name, values_path, kubeconfig_path):
+def helm_chart_deploy_backup(helm_chart_name, helm_chart_version, cluster_namespace, cluster_release_name, values_path, kubeconfig_path, force_deploy_helm_chart):
     result_json = {}
 
     gitops_repository = os.environ.get("gitops_repository")
@@ -32,6 +32,9 @@ def helm_chart_deploy_backup(helm_chart_name, helm_chart_version, cluster_namesp
 
             if values_path:
                 helm_install_cmd.extend(["-f", values_path])
+
+            if force_deploy_helm_chart:
+                helm_install_cmd.append("--force-replace")
 
             before = get_latest_deployment(cluster_release_name, cluster_namespace, kubeconfig_path)
 
