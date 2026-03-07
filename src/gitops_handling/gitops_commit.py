@@ -6,12 +6,12 @@ from datetime import datetime
 import yaml
 import shutil
 import json
+from helpers.branch_helpers import get_default_branch
 from core.variables import *
 
 def commit_helm_chart(helm_chart_url, helm_chart_name, helm_chart_version, helm_chart_values, cluster_namespace, cluster_release_name, deploy_backup_helm_chart, force_deploy_helm_chart):
     gitops_repository = os.environ.get("gitops_repository")
     gitops_pat = os.environ.get("gitops_pat")
-    gitops_branch_name = os.environ.get("gitops_branch_name")
 
     gitops_gpg_priv_key = os.environ.get("gitops_gpg_priv_key")
     gitops_gpg_priv_key_id = os.environ.get("gitops_gpg_priv_key_id")
@@ -23,7 +23,13 @@ def commit_helm_chart(helm_chart_url, helm_chart_name, helm_chart_version, helm_
 
     timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
 
-    result = subprocess.run(["git", "ls-remote", "--heads", gitops_repository_with_pat, gitops_branch_name], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
+    release_namespace = f"{cluster_namespace}/{cluster_release_name}"
+
+    gitops_release_name_branch = f"launchpad/{release_namespace}"
+
+    default_branch = get_default_branch(gitops_repository_with_pat)
+
+    result = subprocess.run(["git", "ls-remote", "--heads", gitops_repository_with_pat, gitops_release_name_branch], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
 
     if not result.stdout:
         with tempfile.TemporaryDirectory() as tmp_create_branch:
@@ -35,17 +41,21 @@ def commit_helm_chart(helm_chart_url, helm_chart_name, helm_chart_version, helm_
             subprocess.run(["git", "config", "--local", "user.name", gitops_user_name], cwd=tmp_create_branch, check=True)
             subprocess.run(["git", "config", "--local", "user.email", gitops_user_email], cwd=tmp_create_branch, check=True)
 
-            subprocess.run(["git", "checkout", "-b", gitops_branch_name], cwd=tmp_create_branch, check=True)
+            subprocess.run(["git", "checkout", "-b", gitops_release_name_branch], cwd=tmp_create_branch, check=True)
 
             subprocess.run(["git", "commit", "--allow-empty", "-m", "bot: Initial branch creation"], cwd=tmp_create_branch, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-            subprocess.run(["git", "push", "-u", "origin", gitops_branch_name], cwd=tmp_create_branch, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
-    
+            subprocess.run(["git", "push", "-u", "origin", gitops_release_name_branch,
+                "-o", "merge_request.create",
+                "-o", "merge_request.remove_source_branch",
+                "-o", f"merge_request.target={default_branch}",
+                "-o", f"merge_request.title=Update {release_namespace}",
+                "-o", f"merge_request.description=Automated merge request that shows what is currently deployed on the cluster in release name: {release_namespace}"
+            ], cwd=tmp_create_branch, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
+
     with tempfile.TemporaryDirectory() as tmp_repo_dir, tempfile.TemporaryDirectory() as tmp_gpg_dir:
 
-        subprocess.run(["git", "clone", "--branch", gitops_branch_name, gitops_repository_with_pat, tmp_repo_dir], check=True)
-
-        release_namespace = f"{cluster_namespace}/{cluster_release_name}"
+        subprocess.run(["git", "clone", "--branch", gitops_release_name_branch, gitops_repository_with_pat, tmp_repo_dir], check=True)
         
         backup_helm_chart_dir = os.path.join(tmp_repo_dir, gitops_backup_helm_chart_deployment, f"{helm_chart_name}_{helm_chart_version}")
 
@@ -62,6 +72,7 @@ def commit_helm_chart(helm_chart_url, helm_chart_name, helm_chart_version, helm_
         helm_chart_metadata = {
             "helm_chart_url": helm_chart_url,
             "helm_chart_name": helm_chart_name,
+            "namespace": cluster_namespace,
             "helm_chart_version": pulled_helm_chart_version,
             "timestamp": timestamp,
             "backup_helm_chart_deployed": False,
@@ -95,7 +106,7 @@ def commit_helm_chart(helm_chart_url, helm_chart_name, helm_chart_version, helm_
 
         subprocess.run(commit_cmd, cwd=tmp_repo_dir, check=True)
         
-        subprocess.run(["git", "push", "origin", gitops_branch_name], cwd=tmp_repo_dir, check=True)
+        subprocess.run(["git", "push", "origin", gitops_release_name_branch], cwd=tmp_repo_dir, check=True)
 
 
 def pull_helm_chart(helm_chart_url, helm_chart_version, chart_name, helm_chart_dir, cluster_namespace, cluster_release_name):
