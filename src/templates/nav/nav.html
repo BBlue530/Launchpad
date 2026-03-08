@@ -16,8 +16,14 @@
                 <span class="nav-icon">🚀</span> Add Service
             </a>
 
-            <a href="/cluster/observability" class="{% if request.path == '/cluster/observability' %}active{% endif %}">
-                <span class="nav-icon">🌐</span> Cluster Observability
+            <li class="nav-section">Observability</li>
+
+            <a href="/observability/cluster" class="{% if request.path == '/observability/cluster' %}active{% endif %}">
+                <span class="nav-icon">🌐</span> Cluster
+            </a>
+
+            <a href="/observability/connectivity" class="{% if request.path == '/observability/connectivity' %}active{% endif %}">
+                <span class="nav-icon">🔌</span> Connectivity
             </a>
         </li>
     </ul>

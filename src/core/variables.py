@@ -1,9 +1,12 @@
+cluster_observability_endpoint = "/observability/cluster"
+connectivity_observability_endpoint = "/observability/connectivity"
+
 gitops_name = "Gitops"
-gitops_logs_endpoint = "/logs/connectivity/gitops"
+gitops_logs_endpoint = f"{connectivity_observability_endpoint}?external_connection={gitops_name}"
 gitops_module_name = "gitops.repository"
 
 cluster_name = "K8S"
-cluster_log_endpoint = "/logs/connectivity/k8s"
+cluster_log_endpoint = f"{connectivity_observability_endpoint}?external_connection={cluster_name}"
 cluster_module_name = "k8s.cluster"
 
 db_name = "Database"
@@ -21,8 +24,6 @@ connected_key = "connected"
 default_state = "neutral"
 default_connected_state = False
 default_message = "Not checked"
-
-cluster_observability_endpoint = "/cluster/observability"
 
 cluster_error_message = "Namespace has one or more failing services."
 cluster_warning_message = "Degraded performance or partial failures detected."

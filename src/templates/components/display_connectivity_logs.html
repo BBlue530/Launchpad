@@ -1,0 +1,46 @@
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='components_style.css') }}">
+
+<div class="content-center">
+    <div class="panel input-panel">
+        <div class="panel-header">
+            Connectivity Logs
+        </div>
+
+        <div class="input-form">
+            {% if connectivity_status %}
+                {% for connectivity in connectivity_status %}
+                    <div class="connectivity-item">
+
+                            <a href="{{ connectivity.url }}"
+                            class="status-item status-{{ connectivity.state }}"
+                            title="View logs for {{ connectivity.name }}">
+
+                                <span class="status-label">{{ connectivity.name }}</span>
+                                <span class="status-module">{{ connectivity.module }}</span>
+                            </a>
+
+                            <div class="dropdown-content">
+                                <div class="status-message status-{{ connectivity.state }}">
+                                    {{ connectivity.message }}
+                                </div>
+                            </div>
+
+                        <div class="log-box">
+                            <div class="log-lines">
+                                {% for log in connectivity.logs %}
+                                    <div class="log-line">{{ log }}</div>
+                                {% else %}
+                                    <div class="log-empty">No logs available</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                    </div>
+                    <hr>
+                {% endfor %}
+            {% else %}
+                <p>No connectivity data available.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>

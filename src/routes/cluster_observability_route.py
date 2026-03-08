@@ -4,9 +4,9 @@ from helpers.logs import log_handling
 from service_status.external_connectivity import system_connectivity_status
 from core.variables import *
 
-observability_handling_bp = Blueprint("observability_handling", __name__)
+cluster_observability_handling_bp = Blueprint("cluster_observability_handling", __name__)
 
-@observability_handling_bp.route(cluster_observability_endpoint)
+@cluster_observability_handling_bp.route(cluster_observability_endpoint)
 def cluster_observability():
     message = None
     release_name = request.args.get("release_name")
@@ -31,4 +31,4 @@ def cluster_observability():
         "client_ip": request.remote_addr,
     })
 
-    return render_template("cluster_observability_release_names.html", system_status=system_connectivity_status, all_release_namespace_services=all_release_namespace_services, all_release_namespaces=all_release_namespaces, user=user, message=message)
+    return render_template("cluster_observability.html", system_status=system_connectivity_status, all_release_namespace_services=all_release_namespace_services, all_release_namespaces=all_release_namespaces, user=user, message=message)
